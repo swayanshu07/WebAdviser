@@ -68,7 +68,7 @@ Press the **Scan Now** button or hit **Enter**. The tool will automatically:
 
 **Step 3 — View the Results**
 The results appear in a two-panel dashboard:
-- **Left panel** — Security Score (with animated ring), score breakdown, and SSL certificate details
+- **Left panel** — Security Score, score breakdown, and SSL certificate details
 - **Right panel** — Security headers status (Present / Missing) and detailed recommendations
 
 **Step 4 — Read the Recommendations**
@@ -101,13 +101,13 @@ Click **Download PDF** at the top of the right panel to save a full security rep
 | HTTPS Enabled | 20 |
 | Valid SSL Certificate | 20 |
 | Strict-Transport-Security | 10 |
-| Content-Security-Policy | 15 |
+| Content-Security-Policy | 10 |
 | Content-Security-Policy-Report-Only | 5 |
 | X-Frame-Options | 10 |
 | X-Content-Type-Options | 10 |
 | Referrer-Policy | 10 |
 | Permissions-Policy | 5 |
-| **Total** | **105** |
+| **Total** | **100** |
 
 ## 🔢 Risk Rating
 | Score | Rating |
