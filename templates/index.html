@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebAdviser – Security Checker</title>
+<style>
+  :root {
+    --bg: #0a0f1e; --surface: #0f1829; --card: #141f35; --border: #1e2d4a;
+    --accent: #00d4ff; --accent2: #7c3aed; --text: #e2e8f0; --muted: #64748b;
+    --green: #10b981; --yellow: #f59e0b; --red: #ef4444; --orange: #f97316;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+  nav {
+    display: flex; align-items: center; padding: 16px 40px;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: var(--accent); }
+  .logo svg { width: 28px; height: 28px; }
+
+  .hero { text-align: center; padding: 52px 24px 36px; flex-shrink: 0; }
+  .hero h1 {
+    font-size: clamp(26px, 4vw, 44px); font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+  .hero p { color: var(--muted); font-size: 16px; max-width: 480px; margin: 0 auto 32px; }
+
+  .scan-box {
+    max-width: 620px; margin: 0 auto; display: flex; gap: 10px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 8px 8px 8px 20px; box-shadow: 0 0 40px rgba(0,212,255,0.07);
+  }
+  .scan-box input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 16px; min-width: 0; }
+  .scan-box input::placeholder { color: var(--muted); }
+  .btn-scan {
+    background: linear-gradient(135deg, var(--accent), #0099cc); color: #000;
+    font-weight: 700; font-size: 15px; border: none; border-radius: 10px;
+    padding: 12px 28px; cursor: pointer; white-space: nowrap; transition: opacity 0.2s;
+  }
+  .btn-scan:hover { opacity: 0.9; }
+  .btn-scan:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* RESULTS */
+  #results { display: none; flex-direction: column; flex: 1; min-height: 0; }
+
+  .meta-bar {
+    display: flex; gap: 24px; font-size: 13px; color: var(--muted);
+    padding: 10px 24px; background: var(--surface); flex-shrink: 0;
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    position: sticky; top: 61px; z-index: 90;
+  }
+
+  /* PANELS — fills remaining viewport height */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    flex: 1;
+    min-height: 0;
+    height: calc(100vh - 122px);
+    overflow: hidden;
+  }
+
+  .left-panel {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .right-panel {
+    background: var(--bg);
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .left-panel::-webkit-scrollbar,
+  .right-panel::-webkit-scrollbar { width: 5px; }
+  .left-panel::-webkit-scrollbar-track,
+  .right-panel::-webkit-scrollbar-track { background: transparent; }
+  .left-panel::-webkit-scrollbar-thumb,
+  .right-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  .panel-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; flex-shrink: 0; }
+  .card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 16px; }
+
+  /* SCORE CIRCLE */
+  .score-circle-wrap { display: flex; flex-direction: column; align-items: center; padding: 4px 0 12px; }
+  .score-circle { position: relative; width: 150px; height: 150px; margin-bottom: 12px; }
+  .score-circle svg { transform: rotate(-90deg); }
+  .score-circle-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; line-height: 1.1; }
+  .score-num { font-size: 42px; font-weight: 900; }
+  .score-slash { font-size: 13px; color: var(--muted); }
+  .score-rating { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+  .score-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; width: 100%; margin-bottom: 16px; }
+  .score-bar-fill { height: 100%; border-radius: 99px; transition: width 1s ease; width: 0%; }
+
+  .breakdown-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .breakdown-item:last-child { border-bottom: none; }
+  .pts-pass { color: var(--green); font-weight: 600; }
+  .pts-fail { color: var(--red); font-weight: 600; }
+
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--muted); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: rgba(16,185,129,0.15); color: var(--green); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+
+  .download-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; flex-shrink: 0;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 18px; align-items: center;
+  }
+  .download-bar span { font-size: 12px; color: var(--muted); margin-right: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .btn-dl {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 9px 18px; border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .btn-dl:hover { border-color: var(--accent); background: rgba(0,212,255,0.05); }
+
+  .headers-grid { display: flex; flex-direction: column; gap: 10px; }
+  .header-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+  }
+  .header-name { font-family: 'Courier New', monospace; font-size: 12px; color: var(--accent); margin-bottom: 3px; }
+  .header-purpose { font-size: 12px; color: var(--muted); }
+
+  .rec-item {
+    border-radius: 0 10px 10px 0; padding: 14px 16px; margin-bottom: 10px;
+    border-left: 4px solid; background: var(--surface);
+  }
+  .rec-item:last-child { margin-bottom: 0; }
+  .rec-header { font-weight: 700; font-size: 13px; margin-bottom: 5px; }
+  .rec-detail { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .rec-fix { font-size: 12px; color: var(--text); }
+  .rec-fix strong { color: var(--accent); }
+  .all-clear { text-align: center; padding: 32px; color: var(--green); font-size: 15px; }
+
+  .spinner {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(0,212,255,0.3); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    WebAdviser
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Analyze. Identify. Secure.</h1>
+  <p>Instantly scan any website for HTTPS, SSL validity, security headers, and get a full security report.</p>
+  <div class="scan-box">
+    <input type="text" id="urlInput" placeholder="Enter domain or URL — e.g., example.com" autocomplete="off" />
+    <button class="btn-scan" id="scanBtn" onclick="runScan()">Scan Now</button>
+  </div>
+</div>
+
+<div id="results">
+  <div class="meta-bar" id="metaInfo"></div>
+  <div class="panels">
+
+    <!-- LEFT: Score + SSL -->
+    <div class="left-panel">
+      <div class="panel-card">
+        <div class="card-title">Security Score</div>
+        <div class="score-circle-wrap">
+          <div class="score-circle">
+            <svg width="150" height="150" viewBox="0 0 150 150">
+              <circle cx="75" cy="75" r="62" fill="none" stroke="#1e2d4a" stroke-width="10"/>
+              <circle id="scoreArc" cx="75" cy="75" r="62" fill="none" stroke="#10b981" stroke-width="10"
+                stroke-dasharray="389.6" stroke-dashoffset="389.6"
+                stroke-linecap="round" style="transition: stroke-dashoffset 1s ease, stroke 0.3s;"/>
+            </svg>
+            <div class="score-circle-text">
+              <div class="score-num" id="scoreNum" style="color:#10b981">—</div>
+              <div class="score-slash">/100</div>
+            </div>
+          </div>
+          <div class="score-rating" id="scoreLabel">—</div>
+          <div class="score-bar"><div class="score-bar-fill" id="scoreBarFill"></div></div>
+        </div>
+        <div id="breakdownList"></div>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-title">HTTPS &amp; SSL Certificate</div>
+        <div id="httpsSSLInfo"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Download + Headers + Recommendations -->
+    <div class="right-panel">
+      <div class="download-bar">
+        <span>Export Report</span>
+        <button class="btn-dl" onclick="downloadReport('pdf')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+          Download PDF
+        </button>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-title">Security Headers</div>
+        <div class="headers-grid" id="headersGrid"></div>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-title">Recommendations</div>
+        <div id="recsList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let lastScanData = null;
+const circumference = 2 * Math.PI * 62;
+
+async function runScan() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { alert('Please enter a URL.'); return; }
+
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Scanning...';
+
+  try {
+    const res = await fetch('/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    lastScanData = data;
+    renderResults(data);
+  } catch(e) {
+    alert('Scan failed. Check your connection or URL.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Scan Now';
+  }
+}
+
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runScan();
+});
+
+function badge(text, cls) {
+  return `<span class="badge badge-${cls}">${text}</span>`;
+}
+
+function renderResults(d) {
+  document.getElementById('metaInfo').innerHTML =
+    `<span>📅 ${d.scan_date}</span><span>🌐 ${d.url}</span>`;
+
+  const s = d.score;
+  const col = s.score >= 80 ? '#10b981' : s.score >= 60 ? '#f59e0b' : '#ef4444';
+
+  document.getElementById('scoreNum').style.color = col;
+  document.getElementById('scoreNum').textContent = s.score;
+  document.getElementById('scoreLabel').style.color = col;
+  document.getElementById('scoreLabel').textContent = s.rating;
+
+  const arc = document.getElementById('scoreArc');
+  arc.setAttribute('stroke', col);
+  setTimeout(() => {
+    arc.style.strokeDashoffset = circumference - (s.score / 100) * circumference;
+  }, 50);
+
+  const fill = document.getElementById('scoreBarFill');
+  fill.style.background = col;
+  setTimeout(() => fill.style.width = s.score + '%', 50);
+
+  document.getElementById('breakdownList').innerHTML = s.breakdown.map(b =>
+    `<div class="breakdown-item">
+      <span>${b.item}</span>
+      <span class="${b.status === 'pass' ? 'pts-pass' : 'pts-fail'}">${b.earned}/${b.points}</span>
+    </div>`
+  ).join('');
+
+  const h = d.https, ssl = d.ssl;
+  const daysColor = ssl.days_remaining < 30 ? 'badge-yellow' : 'badge-green';
+  document.getElementById('httpsSSLInfo').innerHTML = `
+    <div class="info-row"><span class="info-label">HTTPS</span>${h.https_enabled ? badge('Enabled','green') : badge('Not Enabled','red')}</div>
+    <div class="info-row"><span class="info-label">SSL Issuer</span><span>${ssl.issuer}</span></div>
+    <div class="info-row"><span class="info-label">Valid From</span><span>${ssl.valid_from}</span></div>
+    <div class="info-row"><span class="info-label">Expiry Date</span><span>${ssl.expiry_date}</span></div>
+    <div class="info-row"><span class="info-label">Days Remaining</span><span class="badge ${daysColor}">${ssl.days_remaining} days</span></div>
+    <div class="info-row"><span class="info-label">Status</span>${ssl.status === 'Valid' ? badge('Valid','green') : badge(ssl.status,'red')}</div>
+  `;
+
+  document.getElementById('headersGrid').innerHTML = Object.entries(d.headers).map(([name, info]) => {
+    const hBadge = info.present ? badge('Present','green') : badge('Missing','red');
+    return `<div class="header-row">
+      <div>
+        <div class="header-name">${name}</div>
+        <div class="header-purpose">${info.purpose}</div>
+      </div>
+      ${hBadge}
+    </div>`;
+  }).join('');
+
+  const rl = document.getElementById('recsList');
+  if (!d.recommendations.length) {
+    rl.innerHTML = '<div class="all-clear">✅ No issues found! This site follows strong security practices.</div>';
+  } else {
+    const sevColor = { Critical: '#ef4444', High: '#f97316', Medium: '#f59e0b' };
+    rl.innerHTML = d.recommendations.map(r => {
+      const c = sevColor[r.severity] || '#64748b';
+      return `<div class="rec-item" style="border-color:${c}">
+        <div class="rec-header" style="color:${c}">[${r.severity}] ${r.issue}</div>
+        <div class="rec-detail">${r.detail}</div>
+        <div class="rec-fix"><strong>Fix:</strong> ${r.fix}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('results').style.display = 'flex';
+}
+
+async function downloadReport(fmt) {
+  if (!lastScanData) return;
+  const res = await fetch(`/report/${fmt}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(lastScanData)
+  });
+  const blob = await res.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = res.headers.get('content-disposition')?.split('filename=')[1] || `report.${fmt}`;
+  a.click();
+}
+</script>
+</body>
+</html>
