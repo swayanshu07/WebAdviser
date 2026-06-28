@@ -23,7 +23,7 @@ SECURITY_HEADERS = {
     },
     "Content-Security-Policy": {
         "purpose": "Protects against Cross-Site Scripting (XSS)",
-        "points": 15,
+        "points": 10,
         "risk": "XSS and data injection attacks possible",
         "recommendation": "Implement a strict CSP header to restrict resource loading: \"Content-Security-Policy: default-src 'self'\"."
     },
