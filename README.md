@@ -57,10 +57,7 @@ Type any domain or URL into the search bar on the homepage.
 Examples:
 
 google.com
-
-https://example.com
-
-pokemonshowdown.com
+example.com
 
 **Step 2 — Click "Scan Now"**
 Press the **Scan Now** button or hit **Enter**. The tool will automatically:
