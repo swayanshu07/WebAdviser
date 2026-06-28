@@ -48,3 +48,73 @@ py app.py
 ```
 
 ### 5. Open in browser
+http://127.0.0.1:5000
+
+## 🖥️ How to Use
+
+**Step 1 — Enter a website**
+Type any domain or URL into the search bar on the homepage.
+Examples:
+
+google.com
+
+https://example.com
+
+pokemonshowdown.com
+
+**Step 2 — Click "Scan Now"**
+Press the **Scan Now** button or hit **Enter**. The tool will automatically:
+- Check if HTTPS is enabled
+- Validate the SSL certificate
+- Analyze all security headers
+- Calculate the security score
+
+**Step 3 — View the Results**
+The results appear in a two-panel dashboard:
+- **Left panel** — Security Score (with animated ring), score breakdown, and SSL certificate details
+- **Right panel** — Security headers status (Present / Missing) and detailed recommendations
+
+**Step 4 — Read the Recommendations**
+Each missing or misconfigured header shows:
+- Severity level: `Critical` / `High` / `Medium`
+- What the risk is
+- Exact fix to implement
+
+**Step 5 — Download the Report**
+Click **Download PDF** at the top of the right panel to save a full security report including:
+- Scan date and URL
+- HTTPS and SSL details
+- Full headers table
+- All recommendations
+
+## 📋 Security Headers Checked
+| Header | Purpose |
+|--------|---------|
+| Strict-Transport-Security | Forces HTTPS communication |
+| Content-Security-Policy | Protects against XSS attacks |
+| Content-Security-Policy-Report-Only | Reports CSP violations without enforcing |
+| X-Frame-Options | Prevents Clickjacking |
+| X-Content-Type-Options | Prevents MIME sniffing |
+| Referrer-Policy | Controls referrer leakage |
+| Permissions-Policy | Restricts browser feature access |
+
+## 🏆 Scoring System
+| Check | Points |
+|-------|--------|
+| HTTPS Enabled | 20 |
+| Valid SSL Certificate | 20 |
+| Strict-Transport-Security | 10 |
+| Content-Security-Policy | 15 |
+| Content-Security-Policy-Report-Only | 5 |
+| X-Frame-Options | 10 |
+| X-Content-Type-Options | 10 |
+| Referrer-Policy | 10 |
+| Permissions-Policy | 5 |
+| **Total** | **105** |
+
+## 🔢 Risk Rating
+| Score | Rating |
+|-------|--------|
+| 80–105 | ✅ Secure |
+| 60–79 | ⚠️ Moderate |
+| Below 60 | ❌ Needs Improvement |
